@@ -1,7 +1,5 @@
----
-title: "R for DS Chapter 5 - Data Transformation Answers"
-output: html_notebook
----
+# "R for DS Chapter 5 - Data Transformation Answers"
+
 ```{r}
 library(tidyverse)
 library(nycflights13)
@@ -330,7 +328,7 @@ not_cancelled %>%
   group_by(carrier) %>%
   count(sort = TRUE) 
 ```
-## 5.7.1
+## 5.7.1 EXERCISES
 1. Refer back to the lists of useful mutate and filtering functions. Describe how each operation changes when you combine it with grouping.
       It is applied to groups. For example you can use mutate to create new variables by using group statistics specificly or you can filter out an entire group or filter as normal.
       
