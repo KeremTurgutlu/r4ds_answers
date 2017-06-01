@@ -7,7 +7,7 @@ library(tidyverse)
 library(nycflights13)
 ```
 
-5.2.4 EXERCISES
+## 5.2.4 EXERCISES
 1. Find all flights that
       - Had an arrival delay of two or more hours
       - Flew to Houston (IAH or HOU)
@@ -35,7 +35,7 @@ filter(flights, is.na(flights$dep_time))
 4. Why is NA ^ 0 not missing? Why is NA | TRUE not missing? Why is FALSE & NA not missing? Can you figure out the general rule? (NA * 0 is a tricky counterexample!)
     These are operations which have the same results for every possible input.
 
-5.3.1 EXERCISES
+## 5.3.1 EXERCISES
 1. How could you use arrange() to sort all missing values to the start? (Hint: use is.na()).
     First order by is.na() desc for putting the column NA to the top than again arrange by the same column by preferance.
 ```{r}
@@ -62,7 +62,7 @@ ex3
 ex4 <- arrange(flights, desc(air_time))
 ex4
 ```
-5.4.1 EXERCISES
+## 5.4.1 EXERCISES
 1. Brainstorm as many ways as possible to select dep_time, dep_delay, arr_time, and arr_delay from flights.
 
 ```{r}
@@ -95,7 +95,7 @@ Outputs an empty tibble.
 empty <- select(flights, dplyr::contains("TIME",ignore.case = FALSE ))
 empty
 ```
-5.5.2 EXERCISES
+## 5.5.2 EXERCISES
 1. Currently dep_time and sched_dep_time are convenient to look at, but hard to compute with because they’re not really continuous numbers. Convert them to a more convenient representation of number of minutes since midnight.
 ```{r}
 f2 <- transmute(flights,
@@ -162,7 +162,7 @@ op <- options(digits = 4, width = 90) # for nice formatting
 head(tx)
 
 ```
-5.6.7 EXERCISES
+## 5.6.7 EXERCISES
 1. Brainstorm at least 5 different ways to assess the typical delay characteristics of a group of flights. Consider the following scenarios:
       - A flight is 15 minutes early 50% of the time, and 15 minutes late 50% of the time.
       - A flight is always 10 minutes late.
@@ -330,7 +330,7 @@ not_cancelled %>%
   group_by(carrier) %>%
   count(sort = TRUE) 
 ```
-5.7.1
+## 5.7.1
 1. Refer back to the lists of useful mutate and filtering functions. Describe how each operation changes when you combine it with grouping.
       It is applied to groups. For example you can use mutate to create new variables by using group statistics specificly or you can filter out an entire group or filter as normal.
       
