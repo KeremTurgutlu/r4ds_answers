@@ -2,6 +2,6 @@
 
 * I am a data science enthusiast who is familiar with Python and new to R.
     
-* In this repo my intetion show exercise answers while providing the outcomes to people who seek different approaches to exercise questions of this book.
+* In this repo my intetion is to answer exercise questions while providing alternative approaches and refering to similarities to some python packages and functions.
  
 * PS. Special thanks to H. Wickham and all other contributors for this amazing book.
