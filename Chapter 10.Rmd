@@ -1,0 +1,115 @@
+# Chapter 10 Tibbles
+```{r}
+library(tidyverse)
+```
+
+## 10.5 EXERCISES
+
+#### 1. How can you tell if an object is a tibble? (Hint: try printing mtcars, which is a regular data frame).
+  We can check the class of the data by using class().
+```{r}
+class(mtcars)
+```
+
+#### 2. Compare and contrast the following operations on a data.frame and equivalent tibble. What is different? Why might the default data frame behaviours cause you frustration?
+  As it can be inspect by the following codes, `tbl$x` causes an error since tibbles don't return TRUE by partial matching. We must run `tbl$xyz` to get the exact column. This might cause us a problem when there are to columns starting with x and we intend to get a specific one, not catching an error won't be good in this case.
+
+```{r}
+df <- data.frame(abc = 1, xyz = "a")
+df$x
+df[, "xyz"]
+df[, c("abc", "xyz")]
+```
+
+```{r}
+tbl <- as.tibble(df)
+tbl$x
+tbl[, "xyz"]
+tbl[, c("abc", "xyz")]
+```
+```{r}
+tbl$xyz
+```
+
+#### 3. If you have the name of a variable stored in an object, e.g. var <- "mpg", how can you extract the reference variable from a tibble?
+
+```{r}
+var <- "mpg"
+mtcars_tbl <- as.tibble(mtcars)
+mtcars_tbl[var] # returns a tibble
+mtcars_tbl[[var]] # returns a vector
+# same above using pipe
+mtcars_tbl %>% 
+  .[var]
+mtcars_tbl %>%
+  .[[var]]
+```
+#### 4. Practice referring to non-syntactic names in the following data frame by
+* Extracting the variable called 1.
+* Plotting a scatterplot of 1 vs 2.
+* Creating a new column called 3 which is 2 divided by 1.
+* Renaming the columns to one, two and three.
+  R has some syntatic rules when assigning names. But by using "``" we can assign non syntactic names.
+```{r}
+# column 2 takes column 1 multiplies each element by 2 then creates a normal (gaussian) random variables vector of size of the 1 column, finally add these to vectors to form a new column called 2.
+annoying <- tibble(
+  `1` = 1:10,
+  `2` = `1` * 2 + rnorm(length(`1`))
+)
+annoying
+```
+```{r}
+class(annoying)
+annoying$`1`
+```
+```{r}
+annoying %>%
+ggplot(aes(x = `1`, y = `2`))+
+  geom_point()
+```
+```{r}
+annoying <- annoying %>%
+  mutate(
+    `3` = `2`/`1`
+  )
+```
+
+```{r}
+names(annoying) = c("one", "two", "three")
+annoying
+```
+  To those who are familiar with pandas. Enframe and deframe are similar to pd.pivot/pd.unstack and pd.stack. What they do are simply pivoting and stacking data. If you have a long list with names, it can transform it into a dataframe, or vice-versa.
+```{r}
+stacked_tbl <- tibble(
+  groups = as.vector(c(rep("A", 10), rep("B", 10), rep("C", 10))),
+  values = rnorm(30)
+)
+```
+
+```{r}
+list_form <- deframe(stacked_tbl)
+list_form
+```
+
+```{r}
+df_form <- enframe(list_form)
+df_form
+```
+#### 6. What option controls how many additional column names are printed at the footer of a tibble?
+  One can see the set options by running options(). 
+
+Tibble Package options
+  * Display options for tbl_df, used by trunc_mat() and (indirectly) by print.tbl().
+  * tibble.print_max Row number threshold: Maximum number of rows printed. Set to Inf to
+always print all rows. Default: 20.
+  * tibble.print_min Number of rows printed if row number threshold is exceeded. Default: 10.
+  * tibble.width Output width. Default: NULL (use width option).
+  * tibble.max_extra_cols Number of extra columns printed in reduced form. Default: 100.
+
+```{r}
+# No more than 5 column at the end
+options(tibble.max_extra_cols = 5)
+```
+
+
+
