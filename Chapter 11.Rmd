@@ -1,0 +1,126 @@
+# Chapter 12 - Data Import
+```{r}
+library(tidyverse)
+```
+
+## 11.2.2 EXERCISES
+
+#### 1. What function would you use to read a file where fields were separated with “|”?
+
+    read_delim(file = ..., delim = "|")
+    
+#### 2. Apart from file, skip, and comment, what other arguments do read_csv() and read_tsv() have in common?
+
+    col_names, col_types, locale, na, quoted_na, trim_ws, n_max, guess_max, progress
+    
+#### 3. What are the most important arguments to read_fwf()?
+    
+    col_positions is the most important argument since the function needs to know length of every field.
+    
+#### 4. Sometimes strings in a CSV file contain commas. To prevent them from causing problems they need to be surrounded by a quoting character, like " or '. By convention, read_csv() assumes that the quoting character will be ", and if you want to change it you’ll need to use read_delim() instead. What arguments do you need to specify to read the following text into a data frame?
+
+```{r}
+read_delim("x,y\n1,'a,b'", delim = ",",quote = "'", col_names = FALSE)
+```
+#### 5. Identify what is wrong with each of the following inline CSV files. What happens when you run the code?
+
+```{r}
+read_csv("a,b\n1,2,3\n4,5,6") # drops 3rd column, sets the number of columns by looking at the first line
+read_csv("a,b\n1,2,3\n4,5,6", col_names = c("x1", "x2", "x3")) 
+
+read_csv("a,b,c\n1,2\n1,2,3,4") # drops 3rd column, sets the number of columns by looking at the first line
+read_csv("a,b,c\n1,2\n1,2,3,4", col_names = c("x1", "x2", "x3", "x4"))
+
+read_csv("a,b\n\"1", col_names = FALSE)
+
+read_csv("a,b\n1,2\na,b") # col_names should be set FALSE
+read_csv("a,b\n1,2\na,b", col_names = FALSE)
+
+read_csv("a;b\n1;3") # change delim to ;
+read_delim("a;b\n1;3", delim = ";", col_names = FALSE)
+```
+
+## 11.3.5 Exercises
+
+#### 1. What are the most important arguments to locale()?
+
+    locale(date_names = "en", date_format = "%AD", time_format = "%AT",
+      decimal_mark = ".", grouping_mark = ",", tz = "UTC",
+      encoding = "UTF-8", asciify = FALSE)
+    
+    
+#### 2. What happens if you try and set decimal_mark and grouping_mark to the same character? What happens to the default value of grouping_mark when you set decimal_mark to “,”? What happens to the default value of decimal_mark when you set the grouping_mark to “.”?
+* Error: `decimal_mark` and `grouping_mark` must be different
+* Default becomes "."
+* Default becomes ","
+  
+#### 3. I didn’t discuss the date_format and time_format options to locale(). What do they do? Construct an example that shows when they might be useful.
+
+* They set default local date and time formats
+* This can be useful if the type of datetime format always same
+
+
+#### 4. If you live outside the US, create a new locale object that encapsulates the settings for the types of file you read most commonly.
+
+```{r}
+locale(date_format = "%d-%m-%Y", time_format = "%H:%M:%S", decimal_mark = ".", grouping_mark = ",",encoding = "utf8")
+```
+#### 5. What’s the difference between read_csv() and read_csv2()?
+
+  read_csv2() uses ; for separators, instead of ,. This is common in European countries which use , as the decimal separator.
+
+#### 6. What are the most common encodings used in Europe? What are the most common encodings used in Asia? Do some googling to find out.
+European 
+* ISO 8859-1 Western Europe
+* ISO 8859-2 Western and Central Europe
+* ISO 8859-3 Western Europe and South European (Turkish, Maltese plus Esperanto)
+* ISO 8859-4 Western Europe and Baltic countries (Lithuania, Estonia, Latvia and Lapp)
+* ISO 8859-9 Western Europe with amended Turkish character set
+* ISO 8859-10 Western Europe with rationalised character set for Nordic languages, including complete Icelandic set
+
+Asian
+* KOI8-R, KOI8-U, KOI7
+* MIK
+* ISCII
+* TSCII
+* VISCII
+* JIS X 0208 is a widely deployed standard for Japanese character encoding that has several encoding forms.
+Shift JIS (Microsoft Code page 932 is a dialect of Shift_JIS)
+* EUC-JP
+* ISO-2022-JP
+* JIS X 0213 is an extended version of JIS X 0208.
+* Shift_JIS-2004
+* EUC-JIS-2004
+* ISO-2022-JP-2004
+* Chinese Guobiao
+* GB 2312
+* GBK (Microsoft Code page 936)
+* GB 18030
+* Taiwan Big5 (a more famous variant is Microsoft Code page 950)
+* Hong Kong HKSCS
+* Korean
+* KS X 1001 is a Korean double-byte character encoding standard
+* EUC-KR
+* ISO-2022-KR
+
+#### 7. Generate the correct format string to parse each of the following dates and times:
+
+```{r}
+d1 <- "January 1, 2010"
+d2 <- "2015-Mar-07"
+d3 <- "06-Jun-2017"
+d4 <- c("August 19 (2015)", "July 1 (2015)")
+d5 <- "12/30/14" # Dec 30, 2014
+t1 <- "1705"
+t2 <- "11:15:10.12 PM"
+
+
+parse_date(d1, "%B %d, %Y")
+parse_date(d2, "%Y-%b-%y")
+parse_date(d3, "%d-%b-%Y")
+parse_vector(d4,collector = col_date(format = "%B %d (%Y)"))
+parse_date(d5, "%m/%d/%y")
+parse_time(t1, "%H%M")
+parse_time(t2,"%H:%M:%OS %p")
+```
+
