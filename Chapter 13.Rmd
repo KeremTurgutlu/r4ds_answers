@@ -1,0 +1,361 @@
+# Chapter 13 - Relational Data
+```{r}
+library(tidyverse)
+library(nycflights13)
+library(viridis)
+```
+## 13.2.1 EXERCISES
+
+#### 1. Imagine you wanted to draw (approximately) the route each plane flies from its origin to its destination. What variables would you need? What tables would you need to combine?
+  
+  We would need origin, dest, latitude and longitude. For this we can combine flights with airports on faa and dest.
+  
+#### 2. I forgot to draw the relationship between weather and airports. What is the relationship and how should it appear in the diagram?
+  
+  Aiport and weather can be combined by faa and origin respectively. So that we can learn weather prior to take off.
+  
+#### 3. weather only contains information for the origin (NYC) airports. If it contained weather records for all airports in the USA, what additional relation would it define with flights?
+  
+  If it contained weather conditions for each airport we could combine weather with flights to inspect weather of the origin and the destination prior to take off and after landing.
+  
+#### 4. We know that some days of the year are “special”, and fewer people than usual fly on them. How might you represent that data as a data frame? What would be the primary keys of that table? How would it connect to the existing tables?
+  
+  These dates may include holidays such as Easter and Christmas. This table would include dates in day month and year, as well as the type of the holiday. Later, we combine this with any table having dates to explore how each special days effect habits of flying.
+
+## 13.3.1 EXERCISES
+
+#### 1. Add a surrogate key to flights.
+
+```{r}
+flights %>%
+  mutate(
+    key =  as.numeric(rownames(flights))
+  )
+```
+#### 2. Identify the keys in the following datasets
+* Lahman::Batting,
+* babynames::babynames
+* nasaweather::atmos
+* fueleconomy::vehicles
+* ggplot2::diamonds
+
+
+```{r}
+# Lahman::Batting
+batting <- Lahman::Batting
+batting %>%
+  count(playerID, yearID, stint, teamID, lgID) %>%
+  filter(n > 1)
+```
+
+```{r}
+# babynames::babynames
+names <- babynames::babynames
+names %>%
+  count(year, sex, name) %>%
+  filter(nn > 1)
+```
+
+```{r}
+# nasaweather::atmos
+atmos <- nasaweather::atmos
+atmos %>%
+  count(lat, long, year, month) %>%
+  filter(n > 1)
+```
+
+```{r}
+# fueleconomy::vehicles
+vehicles <- fueleconomy::vehicles
+vehicles %>%
+  count(id) %>%
+  filter(n > 1)
+```
+
+```{r}
+# Diamonds dataset doesn't have a primary key so we will create an column called "id" as a surrogate key.
+diamonds %>%
+  mutate(
+    id = as.numeric(rownames(diamonds))
+  )
+```
+
+#### 3. Draw a diagram illustrating the connections between the Batting, Master, and Salaries tables in the Lahman package. Draw another diagram that shows the relationship between Master, Managers, AwardsManagers. How would you characterise the relationship between the Batting, Pitching, and Fielding tables?
+
+```{r}
+intersect(intersect(names(salary), names(master)), names(batting))
+```
+  Batting, Master and Salaries are connected by playerid. Batting has batting statistics, master has player info such as birth year, death year, etc and salaries has the salaries of each player. 
+  
+
+```{r}
+managers <- Lahman::Managers
+master <- Lahman::Master
+awardsmanagers <- Lahman::AwardsManagers
+intersect(intersect(names(managers), names(master)), names(awardsmanagers))
+```
+  
+  Again each table is connected with PlayerID. One has manager info, other has demographic info and the final has awards.
+  
+```{r}
+batting <- Lahman::Batting
+pitching <- Lahman::Pitching
+fielding <- Lahman::Fielding
+intersect(intersect(names(batting), names(pitching)), names(fielding))
+```
+  These tables hold batting, pitching and fielding stats. They have player id, year id, player's order of appearances, team id, league id and number of games in common.
+  
+## 13.4.6 EXERCISES
+
+#### 1. Compute the average delay by destination, then join on the airports data frame so you can show the spatial distribution of delays. Here’s an easy way to draw a map of the United States:
+
+```{r}
+library(nycflights13)
+#calculate average arrival delays
+avg_delays <- flights %>%
+  filter(is.na(arr_delay) == FALSE) %>%
+  group_by(dest) %>%
+  summarise(
+    avg_delay = mean(arr_delay)
+  )
+
+# join data
+merged <- left_join(avg_delays, airports %>% select(faa, lat, lon), by = c("dest" = "faa"))
+
+# get rid of outliers (probably error in lat and lon data)
+merged <- merged %>%
+  filter(lon > -140)
+# plot
+merged %>%
+  ggplot()+
+  geom_point(aes(lon, lat, size = avg_delay, color = avg_delay))+
+  scale_size_continuous(range = c(1,5))+
+  scale_color_viridis() +
+  borders("state")+
+  coord_quickmap()
+```
+#### 2. Add the location of the origin and destination (i.e. the lat and lon) to flights.
+
+
+```{r}
+tbl1 <- flights %>%
+  select(origin, dest)
+
+tbl2 <- airports %>%
+  select(faa, lat, lon)
+names(tbl2) <- paste0(names(tbl2), "_origin")
+
+tbl3 <- airports %>%
+  select(faa, lat, lon)
+names(tbl3) <- paste0(names(tbl3), "_dest")
+
+merged <- left_join(left_join(tbl1, tbl2, by = c("origin" = "faa_origin")), tbl3, by = c("dest" =  "faa_dest"))
+merged
+```
+
+#### 3. Is there a relationship between the age of a plane and its delays?
+  There seems to be no relationship between age of a plane and its delays.
+
+```{r}
+# Check if tailnum is primary key
+planes %>%
+  count(tailnum) %>%
+  filter(n > 1)
+
+# Calculate avg arr delay for each plane
+delays <- flights %>%
+  group_by(tailnum, carrier) %>%
+  filter(is.na(arr_delay) == FALSE) %>%
+  summarise(
+    avg_arr_delay = mean(arr_delay)
+  )
+# Merge tables
+merged <- left_join(delays, planes, by = "tailnum")
+
+# Create final table
+final <- merged %>%
+  mutate(
+    plane_age = 2013 - year
+  ) %>%
+  select(tailnum, carrier, avg_arr_delay, plane_age) %>%
+  filter(is.na(plane_age) == FALSE)
+
+# Visualize 1
+final %>%
+  group_by(plane_age) %>%
+  summarise(
+    avg_arr_delay_byage = mean(avg_arr_delay)
+  ) %>%
+  ggplot(final, mapping = aes(plane_age, avg_arr_delay_byage))+
+  geom_point() +
+  geom_smooth()
+```
+
+```{r}
+# Distribution of age of planes for each airline
+final %>%
+  ggplot(final, mapping = aes(y = plane_age, x = carrier))+
+  geom_boxplot()
+```
+  Hawaiian Airlines have the newest plane crew and Envoy Airlines have the oldest. Popular airlines like Delta, United and US have a broader plane crew with a more varying age of planes.
+
+
+#### 4. What weather conditions make it more likely to see a delay?
+  For this example we will explore arr delay vs weather conditions. Let's join flights and weather tables. Unfortunately we only have the weather condiitons of NY airports so we can only investigate departure delays of the origin airports.
+
+```{r}
+# Take the necessary columns 
+flights_sml <- flights %>% 
+  select(year, month, day, sched_dep_time, dep_time, dep_delay, origin)
+# Create sched dep hour in order to join with weather data
+flights_sml <- flights_sml %>%
+  mutate(
+    hour = sched_dep_time %/% 100
+  )
+# Join flights and weather data by year, month, day, hour, origin
+# Some rows are missing in weather table for example, the weather condiitons for 2013,1,1,5,EWR are missing
+merged <- left_join(flights_sml, weather, c("year", "month", "day", "hour", "origin")) # Check missing rows for yourself
+# Since weather table consist timeseries observations we can forward or backward fill them  
+# This is of course a naive approach to fill missing hours but one can think of more sophisticated ways of filling
+
+# Ratio of missing rows
+sum(!complete.cases(merged)) / dim(merged)[1]
+
+# Let's drop missing values and create plots without filling missing data
+complete <- merged[complete.cases(merged), ]
+
+# Explore weather variables
+# All seems to be continous variables also check weather documentation
+# There are outliers in wind which we will drop since they are most probably errors
+summary(complete)
+complete <- complete %>%
+  filter(wind_speed < 500)
+
+daily_weather_delays <- complete %>%
+  group_by(year, month, day) %>%
+  summarise(
+    mean_delay = mean(dep_delay, na.rm = TRUE), 
+    mean_temp = mean(temp, na.rm = TRUE),
+    mean_temp = mean(temp, na.rm = TRUE),
+    mean_dewp = mean(dewp, na.rm = TRUE),
+    mean_humid = mean(humid, na.rm = TRUE),
+    mean_wind_dir = mean(wind_dir, na.rm = TRUE),
+    mean_wind_speed = mean(wind_speed, na.rm = TRUE),
+    mean_wind_gust = mean(wind_gust, na.rm = TRUE),
+    mean_precip = mean(precip, na.rm = TRUE)
+    )
+
+# Very high precipitations cause long delays
+daily_weather_delays %>%
+  filter(mean_precip > 0) %>%
+  ggplot(aes(x = mean_precip, y = mean_delay))+
+  geom_point()+
+  geom_smooth(method = "lm")
+
+# There is relatively stronger correlation between delay and precipitation
+cor(daily_weather_delays$mean_delay, daily_weather_delays$mean_precip)
+  
+```
+
+
+#### 5. What happened on June 13 2013? Display the spatial pattern of delays, and then use Google to cross-reference with the weather.
+  As seen from the map plot eastside has cluster of longer departure and arrival delays. This is due to derecho series, see https://en.wikipedia.org/wiki/June_12%E2%80%9313,_2013_derecho_series.
+
+```{r}
+# Join tables
+jun13delays <- left_join(flight_sml, tbl1 %>% select(faa_origin, lat_origin, lon_origin), by = c("origin" = "faa_origin")) %>%
+  left_join(tbl2 %>% select(faa_dest, lat_dest, lon_dest), by = c("dest" = "faa_dest") ) %>%
+  select(dep_delay, arr_delay, origin, dest, lat_origin, lon_origin, lat_dest, lon_dest) 
+
+# Filter and plot
+jun13delays %>%
+  group_by(lat_dest, lon_dest) %>%
+  filter(!is.na(lat_dest) & !is.na(dep_delay) & lon_dest > -140) %>%
+  summarise(
+    mean_dep_delay = mean(dep_delay, na.rm = TRUE)
+  ) %>%
+  ggplot()+
+  geom_point(aes(lon_dest, lat_dest, size = mean_dep_delay, color = mean_dep_delay), show.legend = FALSE)+
+  borders("state")+
+  scale_color_viridis()+
+  coord_quickmap()
+
+
+```
+## 13.5.1 EXERCISES
+
+#### 1. What does it mean for a flight to have a missing tailnum? What do the tail numbers that don’t have a matching record in planes have in common? (Hint: one variable explains ~90% of the problems.)
+  This is a carrier related problem. 90% of flights with missing tailnum are MQ or AA planes.
+
+```{r}
+anti_join(flights, planes, by = "tailnum") %>%
+  group_by(carrier) %>%
+  summarise(n = n()) %>%
+  mutate(prop = n / sum(n)) %>%
+  arrange(desc(prop))
+
+```
+
+#### 2. Filter flights to only show flights with planes that have flown at least 100 flights.
+
+```{r}
+over100 <- flights %>%
+  count(tailnum, sort = TRUE) %>%
+  filter(n >= 100)
+
+semi_join(flights, over100, by = "tailnum") %>%
+  filter(!is.na(dep_time))
+```
+#### 3. Combine fueleconomy::vehicles and fueleconomy::common to find only the records for the most common models.
+
+```{r}
+vehicles <- fueleconomy::vehicles
+common <- fueleconomy::common
+
+semi_join(vehicles, common, by = c("make", "model"))
+```
+#### 4. Find the 48 hours (over the course of the whole year) that have the worst delays. Cross-reference it with the weather data. Can you see any patterns?
+
+
+#### 5. What does anti_join(flights, airports, by = c("dest" = "faa")) tell you? What does anti_join(airports, flights, by = c("faa" = "dest")) tell you?
+
+```{r}
+anti_join(flights, airports, by = c("dest" = "faa"))
+```
+  These are the flights to destinations that are missing in the airport data.
+  
+  
+```{r}
+anti_join(airports, flights, by = c("faa" = "dest"))
+```
+  These are the airports missing in the flights data or in other words places that no flights were operated to.
+  
+  
+#### 6. You might expect that there’s an implicit relationship between plane and airline, because each plane is flown by a single airline. Confirm or reject this hypothesis using the tools you’ve learned above.
+
+```{r}
+### Planes that lead to a rejection with our hypothesis
+bad_planes <- flights %>%
+  select(tailnum, carrier) %>%
+  filter(!is.na(tailnum)) %>%
+  group_by(tailnum) %>%
+  summarise(
+    n = length(unique(carrier))
+  ) %>%
+  filter(n > 1)
+### Let's check flights of these planes
+semi_join(flights, bad_planes, by = "tailnum") %>%
+  arrange(tailnum, time_hour)
+```
+  After inspecting planes with multiple carriers by sorting flight data by datetime, 2 patterns are discovered. Some planes of 9E turned into EV and some planes of FL turned into DL. Let's check these airlines companies to see whether if they have any connections. Only 18 planes show this behavior we can say there is no strong evidence against our hypothesis that planes are owned by one carrier.
+  
+  
+
+
+
+
+
+
+
+
+
