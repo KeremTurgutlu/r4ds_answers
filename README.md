@@ -5,3 +5,5 @@
 * In this repo my intetion is to answer exercise questions while providing alternative approaches.
  
 * PS. Special thanks to H. Wickham and all other contributors for this amazing book.
+
+* Book url link: http://r4ds.had.co.nz
